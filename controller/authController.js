@@ -40,10 +40,10 @@ const userLogin = async (req,res)=>{
             return;
         }
 
-        addRedisUser(user);
+        const token = await addRedisUser(user);
 
         console.log("userLogin ended.");
-        sendResp(res,"User Loggedin",constants.SUCESS,200);
+        sendResp(res,token,constants.SUCESS,200);
     }catch(err){
         console.error(`Exception during userLogin, message=${err.message}`);
         sendResp(res,err.message,constants.ERROR,500);
@@ -154,9 +154,9 @@ const addRedisUser = async (user)=>{
         await redisClient.del(existingToken);
     }
     const newToken = uuidV4();
-    console.log(newToken);
     await redisClient.set(newToken,JSON.stringify(user),{ EX:LOGIN_TTL });
     await redisClient.set(email,newToken,{ EX:LOGIN_TTL });
+    return newToken;
 }
 
 const removeRedisUser = async (user)=>{
