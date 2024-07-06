@@ -18,8 +18,6 @@ const port = process.env.PORT || 4000;
 
 const start = async ()=>{
 
-    console.log(process.env);
-
     await connectRedis();
 
     await connectDB();
