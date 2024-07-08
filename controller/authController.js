@@ -139,10 +139,24 @@ const validateOTP = async (req,res)=>{
             await addRedisUser(data.user);
             await sendResp(res,"User Registered Sucessfully.",constants.SUCESS,200);
         }else{
-            sendResp(res,"Invalid OTP","OK",200);
+            sendResp(res,"Invalid OTP","OK",400);
         }
     }else{
-        sendResp(res,"User does not exists!","OK",200);
+        sendResp(res,"User does not exists!","OK",400);
+    }
+
+}
+
+const validateToken = async (req,res)=>{
+
+    const token = req.body.token;
+
+    const data = await redisClient.exists(token);
+    
+    if(data){
+        sendResp(res,true,"OK",200);
+    }else{
+        sendResp(res,false,"OK",400);
     }
 
 }
@@ -177,7 +191,8 @@ const validateUser = async (user)=>{
     }else{
         return true;
     }
-    
 }
 
-module.exports = {userLogin,userLogout,forgotPswd,userRegister,validateOTP};
+
+
+module.exports = {userLogin,userLogout,forgotPswd,userRegister,validateOTP,validateToken};
