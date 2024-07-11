@@ -14,96 +14,116 @@ const coderuner = process.env.CODERUNNER_URI
 const csesDB = mongoClient.db('codenest').collection('cses');
 
 const searchProblem = async (req, res) => {
-    const prblm_str = req.body.problem;
-    var all_problems = [];
-    if (prblm_str.length >= 3) {
-        await axios.get(url + '/problemset').then((resp) => {
-            if (resp.status === 200) {
-                const $ = load(resp.data);
-                $('.task').each((index, element) => {
-                    const category = $(element).parent().prev('h2').text();
-                    const link = $(element).children('a').attr('href');
-                    const name = $(element).children('a').text();
-                    const detail = $(element).children('.detail').text();
-                    all_problems.push({ name: name, category: category, link: link, detail: detail, score: getScore(prblm_str.toLowerCase(), name.toLowerCase(), prblm_str.length, name.length) });
-                })
-            }
-        })
-        all_problems.sort((a, b) => {
-            return b.score - a.score;
-        });
+    try{
+        const prblm_str = req.body.problem;
+        var all_problems = [];
+        if (prblm_str.length >= 3) {
+            await axios.get(url + '/problemset').then((resp) => {
+                if (resp.status === 200) {
+                    const $ = load(resp.data);
+                    $('.task').each((index, element) => {
+                        const category = $(element).parent().prev('h2').text();
+                        const link = $(element).children('a').attr('href');
+                        const name = $(element).children('a').text();
+                        const detail = $(element).children('.detail').text();
+                        all_problems.push({ name: name, category: category, link: link, detail: detail, score: getScore(prblm_str.toLowerCase(), name.toLowerCase(), prblm_str.length, name.length) });
+                    })
+                }
+            })
+            all_problems.sort((a, b) => {
+                return b.score - a.score;
+            });
+        }
+        sendResp(res, all_problems.slice(0, process.env.SEARCH_LIMIT), "OK", 200);
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
     }
-    sendResp(res, all_problems.slice(0, process.env.SEARCH_LIMIT), "OK", 200);
 }
 
 const getProblem = async (req, res) => {
 
-    const problemId = req.body.problemId;
+    try{
 
-    await axios.get(url + "/problemset/task/" + problemId)
-        .then((resp) => {
-            if (resp.status === 200) {
-                const $ = load(resp.data);
-                $('img').each((index, element) => {
-                    let text = $(element).attr('src');
-                    text = "https://cses.fi/" + text;
-                    $(element).attr('src', text);
-                });
-                $('.md').append('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>')
-                $('.md').append('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>');
-                res.send($('.md').html());
-            }
-        })
+        const problemId = req.body.problemId;
+
+        await axios.get(url + "/problemset/task/" + problemId)
+            .then((resp) => {
+                if (resp.status === 200) {
+                    const $ = load(resp.data);
+                    $('img').each((index, element) => {
+                        let text = $(element).attr('src');
+                        text = "https://cses.fi/" + text;
+                        $(element).attr('src', text);
+                    });
+                    $('.md').append('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js" integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>')
+                    $('.md').append('<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>');
+                    res.send($('.md').html());
+                }
+            })
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
+    }
 }
 
 const getTestCases = async (request, finalResp) => {
+    try{
+        const problem = request.body.problemId;
 
-    const problem = request.body.problemId;
+        const response = await getTestCasesImpl(problem);
 
-    const response = await getTestCasesImpl(problem);
-
-    await sendResp(finalResp,response.result,response.status,response.code);
+        await sendResp(finalResp,response.result,response.status,response.code);
+    }catch(err){
+        sendResp(finalResp,err.message,"INTERNAL_ERR",500);
+    }
 }
 
 const runCode = async (req, res) => {
 
-    var result;
-
-    const userId = req.body.userId;
-    const lang = req.body.lang;
-    const code = req.body.code;
-    const input = req.body.input;
-
     try{
-        result = await axios.post(`${coderuner}/runCode`,{
-            userId:userId,
-            lang:lang,
-            code:code,
-            input:input
-        })
-    }catch(err){
-        sendResp(res,err.message,"OK",200);
-        return;
-    }
+        var result;
 
-    await sendResp(res, result.data, constatns.SUCESS, 200);
+        const userId = req.body.userId;
+        const lang = req.body.lang;
+        const code = req.body.code;
+        const input = req.body.input;
+
+        try{
+            result = await axios.post(`${coderuner}/runCode`,{
+                userId:userId,
+                lang:lang,
+                code:code,
+                input:input
+            })
+        }catch(err){
+            sendResp(res,err.message,"OK",200);
+            return;
+        }
+
+        await sendResp(res, result.data, constatns.SUCESS, 200);
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
+    }
     
 }
 
 const submitProblem = async (req, res) => {
-    
-    const userId = req.body.userId;
-    const problemId = req.body.problemId;
-    const lang = req.body.lang;
-    const code = req.body.code;
 
-    const {ssid,csrf} = await getSession();
+    try{
+        const userId = req.body.userId;
+        const problemId = req.body.problemId;
+        const lang = req.body.lang;
+        const code = req.body.code;
 
-    const result = await runTestCases(userId,lang,code,problemId,ssid,csrf);
+        const {ssid,csrf} = await getSession();
 
-    await csesDB.insertOne({userId:userId,problemId:problemId,lang:lang,code:code,result:result});
+        const result = await runTestCases(userId,lang,code,problemId,ssid,csrf);
 
-    await sendResp(res,result,"OK",200);
+        await csesDB.insertOne({userId:userId,problemId:problemId,lang:lang,code:code,result:result});
+
+        await sendResp(res,result,"OK",200);
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
+    }
 
 }
 
@@ -121,15 +141,20 @@ const runTestCases = async (userId,lang,code,problemId,ssid,csrf)=>{
 
 const getSubmissions = async (req, res) => {
 
-    const userId = req.body.userId;
+    try{
 
-    const result = [];
+        const userId = req.body.userId;
 
-    await csesDB.find({userId:userId}).sort({ time: -1 }).forEach((doc)=>{
-        result.push(doc);
-    })
+        const result = [];
 
-    await sendResp(res,result,"OK",200);
+        await csesDB.find({userId:userId}).sort({ time: -1 }).forEach((doc)=>{
+            result.push(doc);
+        })
+
+        await sendResp(res,result,"OK",200);
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
+    }
 }
 
 const getSession = async () => {    

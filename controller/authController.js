@@ -28,8 +28,8 @@ let mailOptions = {
 };
 
 const userLogin = async (req,res)=>{
+
     try{
-        console.log("userLogin started.");
     
         const user = req.body;
 
@@ -42,50 +42,51 @@ const userLogin = async (req,res)=>{
 
         const token = await addRedisUser(user);
 
-        console.log("userLogin ended.");
         sendResp(res,token,constants.SUCESS,200);
     }catch(err){
-        console.error(`Exception during userLogin, message=${err.message}`);
         sendResp(res,err.message,constants.ERROR,500);
     }
 }
 
 const userLogout = async (req,res)=>{
     try{
-        console.log("userLogout started.");
 
         const user = req.body;
 
         removeRedisUser(user);
 
-        console.log("userLogout ended");
         sendResp(res,"User Logged Out.",constants.SUCESS,200);
     }catch(err){
-        console.error(`Exception during userLogout, message=${err.message}`);
         sendResp(res,err.message,constants.ERROR,500);
     }
 }
 
 const forgotPswd = async (req,res)=>{
 
-    const user = await userDB.findOne({email:req.body.email});
+    try{
 
-    if(user==null || user==undefined){
-        sendResp(res,"User Does Not Exists!",constants.FAILURE,400);
-        return;
-    }
+        const user = await userDB.findOne({email:req.body.email});
 
-    mailOptions.to = user.email;
-    mailOptions.subject = 'Forgot Password';
-    mailOptions.html = `<b>Please find the password below : </br> <h2>${user.password}</h2></b>`;
-
-    await transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            return console.log(error);
+        if(user==null || user==undefined){
+            sendResp(res,"User Does Not Exists!",constants.FAILURE,400);
+            return;
         }
-        console.log('Message sent: %s', info.messageId);
-    });
-    sendResp(res,"Mail Sent Sucessfully",constants.SUCESS,200);
+
+        mailOptions.to = user.email;
+        mailOptions.subject = 'Forgot Password';
+        mailOptions.html = `<b>Please find the password below : </br> <h2>${user.password}</h2></b>`;
+
+        await transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                return console.log(error);
+            }
+            console.log('Message sent: %s', info.messageId);
+        });
+        sendResp(res,"Mail Sent Sucessfully",constants.SUCESS,200);
+
+    }catch(err){
+        sendResp(res,err.message,"INTERNAL_ERR",500);
+    }
 }
 
 const userRegister = async (req,res)=>{
@@ -119,7 +120,6 @@ const userRegister = async (req,res)=>{
 
         console.log("userRegister ended");
     }catch(err){
-        console.error(`Exception during userRegister, message=${err.message}`);
         sendResp(res,err.message,constants.ERROR,500);
     }
     
@@ -127,36 +127,44 @@ const userRegister = async (req,res)=>{
 
 const validateOTP = async (req,res)=>{
 
-    const userId = req.body.userId;
-    const otp = req.body.otp;
+    try{
+        const userId = req.body.userId;
+        const otp = req.body.otp;
 
-    var data = await redisClient.get(`REG_OTP_${userId}`);
+        var data = await redisClient.get(`REG_OTP_${userId}`);
 
-    if(data!=null){
-        data = JSON.parse(data);
-        if(data.otp == otp){
-            await userDB.insertOne(data.user);
-            await addRedisUser(data.user);
-            await sendResp(res,"User Registered Sucessfully.",constants.SUCESS,200);
+        if(data!=null){
+            data = JSON.parse(data);
+            if(data.otp == otp){
+                await userDB.insertOne(data.user);
+                await addRedisUser(data.user);
+                await sendResp(res,"User Registered Sucessfully.",constants.SUCESS,200);
+            }else{
+                sendResp(res,"Invalid OTP","OK",400);
+            }
         }else{
-            sendResp(res,"Invalid OTP","OK",400);
+            sendResp(res,"User does not exists!","OK",400);
         }
-    }else{
-        sendResp(res,"User does not exists!","OK",400);
+    }catch(err){
+        sendResp(res,err.message,constants.ERROR,500);
     }
 
 }
 
 const validateToken = async (req,res)=>{
 
-    const token = req.body.token;
+    try{
+        const token = req.body.token;
 
-    const data = await redisClient.exists(token);
-    
-    if(data){
-        sendResp(res,true,"OK",200);
-    }else{
-        sendResp(res,false,"OK",400);
+        const data = await redisClient.exists(token);
+        
+        if(data){
+            sendResp(res,true,"OK",200);
+        }else{
+            sendResp(res,false,"OK",400);
+        }
+    }catch(err){
+        sendResp(res,err.message,constants.ERROR,500);
     }
 
 }
