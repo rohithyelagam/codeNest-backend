@@ -109,8 +109,10 @@ const runCode = async (req, res) => {
 const submitProblem = async (req, res) => {
 
     try{
+        const timeStamp = new Date();
         const userId = req.body.userId;
         const problemId = req.body.problemId;
+        const problemName = req.body.problemName;
         const lang = req.body.lang;
         const code = req.body.code;
 
@@ -118,7 +120,7 @@ const submitProblem = async (req, res) => {
 
         const result = await runTestCases(userId,lang,code,problemId,ssid,csrf);
 
-        await csesDB.insertOne({userId:userId,problemId:problemId,lang:lang,code:code,result:result});
+        await csesDB.insertOne({userId:userId,problemId:problemId,lang:lang,code:code,result:result,problemName:problemName,timeStamp:timeStamp});
 
         await sendResp(res,result,"OK",200);
     }catch(err){
