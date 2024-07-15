@@ -153,7 +153,9 @@ const getSubmissions = async (req, res) => {
 
         const result = [];
 
-        result = await csesDB.find({userId:userId});
+        await csesDB.find({userId:userId}).forEach((doc)=>{
+            result.push(doc);
+        })
 
         await sendResp(res,result,"OK",200);
     }catch(err){
