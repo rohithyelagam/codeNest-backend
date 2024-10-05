@@ -11,20 +11,22 @@ const constants = require('../middlewares/constatns.json');
 const userDB = mongoClient.db("codenest").collection("users");
 
 const LOGIN_TTL = process.env.LOGIN_TTL;
+const emailUser = process.env.EMAIL_USER;
+const emailPassKey = process.env.EMAIL_USER;
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'rohithyalagam2001@gmail.com', // Your email address
-        pass: 'kaitxyyqxdqrzrye' // Your password for the email address
+        user: emailUser, 
+        pass: emailPassKey //
     }
 });
 
 let mailOptions = {
-    from: 'cses@rohith.com', // Sender address
-    to: 'rohithyelagam@gmail.com', // List of recipients
-    subject: 'Test Email', // Subject line
-    html: '<b>Hello world!</b>' // HTML body
+    from: 'cses.codenest@gmail.com', 
+    to: 'rohithyelagam@gmail.com',
+    subject: 'Test Email',
+    html: '<b>Hello world!</b>'
 };
 
 const userLogin = async (req,res)=>{
