@@ -12,7 +12,7 @@ const userDB = mongoClient.db("codenest").collection("users");
 
 const LOGIN_TTL = process.env.LOGIN_TTL;
 const emailUser = process.env.EMAIL_USER;
-const emailPassKey = process.env.EMAIL_USER;
+const emailPassKey = process.env.EMAIL_PASS;
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
